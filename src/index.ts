@@ -5,7 +5,7 @@ import { consoleApp } from './console/router';
 import { HotpepperClient } from './hotpepper/HotpepperClient';
 import { buildGourmetSearchParams, searchRestaurantsInputSchema } from './tools/searchRestaurants';
 
-function createServer(client: HotpepperClient): McpServer {
+function createServer(client: HotpepperClient, rayId: string | undefined): McpServer {
   const server = new McpServer({
     name: 'hpgourmet-mcp',
     version: '0.0.0',
@@ -20,9 +20,17 @@ function createServer(client: HotpepperClient): McpServer {
       inputSchema: searchRestaurantsInputSchema,
     },
     async (input) => {
-      const params = await buildGourmetSearchParams(client, input);
-      const result = await client.searchRestaurants(params);
-      return { content: [{ type: 'text', text: JSON.stringify(result) }] };
+      console.log(`[search_restaurants] rayId=${rayId} called input=${JSON.stringify(input)}`);
+      try {
+        const params = await buildGourmetSearchParams(client, input);
+        console.log(`[search_restaurants] rayId=${rayId} converted params=${JSON.stringify(params)}`);
+        const result = await client.searchRestaurants(params);
+        console.log(`[search_restaurants] rayId=${rayId} success resultsAvailable=${result.resultsAvailable}`);
+        return { content: [{ type: 'text', text: JSON.stringify(result) }] };
+      } catch (err) {
+        console.log(`[search_restaurants] rayId=${rayId} failed error=${(err as Error).message}`);
+        throw err;
+      }
     },
   );
 
@@ -35,7 +43,8 @@ app.route('/console', consoleApp);
 
 app.all('/', async (c) => {
   const client = new HotpepperClient(c.env.HOTPEPPER_API_KEY);
-  const server = createServer(client);
+  const rayId = c.req.raw.headers.get('cf-ray') ?? undefined;
+  const server = createServer(client, rayId);
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
   });

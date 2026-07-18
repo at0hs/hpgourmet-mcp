@@ -179,7 +179,9 @@ export class HotpepperClient {
     try {
       response = await fetch(url.toString());
     } catch (err) {
-      throw new HotpepperApiError(`fetch failed: ${(err as Error).message}`, 502);
+      // err.messageに送信URL全体が含まれるケースを想定し、APIキーの値だけをマスキングする
+      const message = (err as Error).message.split(this.apiKey).join('***');
+      throw new HotpepperApiError(`fetch failed: ${message}`, 502);
     }
 
     let body: unknown;
