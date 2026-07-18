@@ -12,7 +12,8 @@
     "test": "vitest",
     "cf-typegen": "wrangler types",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "check": "tsc --noEmit && npm run format:check"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.12.4",

@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import type { GourmetSearchParams, HotpepperClient } from '../hotpepper/HotpepperClient';
-import { findBudgetByAmount, findGenresByText, findLargeAreasByText, findMiddleAreasByText, findSmallAreasByText } from '../master/converter';
+import {
+  findBudgetByAmount,
+  findGenresByText,
+  findLargeAreasByText,
+  findMiddleAreasByText,
+  findSmallAreasByText,
+} from '../master/converter';
 
 export const searchRestaurantsInputSchema = z
   .object({
@@ -8,17 +14,23 @@ export const searchRestaurantsInputSchema = z
     genre: z
       .string()
       .optional()
-      .describe('料理ジャンル・業態（自由文）。例: "居酒屋"。genreまたはkeywordの少なくとも一方の指定が必須。ジャンルが不明な場合はkeywordを指定すること。'),
+      .describe(
+        '料理ジャンル・業態（自由文）。例: "居酒屋"。genreまたはkeywordの少なくとも一方の指定が必須。ジャンルが不明な場合はkeywordを指定すること。',
+      ),
     keyword: z
       .string()
       .optional()
-      .describe('店名・駅名・キャッチコピー等の自由キーワード。genreまたはkeywordの少なくとも一方の指定が必須。半角スペース区切りで複数指定するとAND検索になる。'),
+      .describe(
+        '店名・駅名・キャッチコピー等の自由キーワード。genreまたはkeywordの少なくとも一方の指定が必須。半角スペース区切りで複数指定するとAND検索になる。',
+      ),
     budget: z
       .number()
       .int()
       .positive()
       .optional()
-      .describe('目安予算（1人あたり、円）。例: 3000。指定した金額が属する価格帯で絞り込む（ぴったりの金額の店に限らず、近い価格帯の店も対象になる）。'),
+      .describe(
+        '目安予算（1人あたり、円）。例: 3000。指定した金額が属する価格帯で絞り込む（ぴったりの金額の店に限らず、近い価格帯の店も対象になる）。',
+      ),
     count: z.number().int().min(1).max(10).optional().describe('取得件数の上限（1〜10、デフォルト10）'),
   })
   .refine((v) => !!v.genre || !!v.keyword, {
