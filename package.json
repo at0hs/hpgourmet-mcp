@@ -14,7 +14,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "tsc --noEmit && npm run format:check",
-    "mcp:inspector": "@modelcontextprotocol/inspector"
+    "inspect": "npx @modelcontextprotocol/inspector"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.12.4",

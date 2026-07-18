@@ -19,7 +19,7 @@ describe('hotpepper_api_console 環境ガード', () => {
     const response = await worker.fetch(request, { ...env, ENVIRONMENT: 'development' }, ctx);
     await waitOnExecutionContext(ctx);
     expect(response.status).toBe(200);
-    expect(await response.text()).toContain('hotpepper_api_console');
+    expect(await response.text()).toContain('<title>ホットペッパーAPIコンソール</title>');
   });
 
   it('ENVIRONMENTがdevelopmentでも存在しないendpointは404を返す', async () => {

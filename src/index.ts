@@ -1,11 +1,11 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { consoleApp } from './console/router';
 import { HotpepperClient } from './hotpepper/HotpepperClient';
 import { buildGourmetSearchParams, searchRestaurantsInputSchema } from './tools/searchRestaurants';
 
-function createServer(client: HotpepperClient, rayId: string | undefined): McpServer {
+export function createServer(client: HotpepperClient, rayId: string | undefined): McpServer {
   const server = new McpServer({
     name: 'hpgourmet-mcp',
     version: '0.0.0',
@@ -41,7 +41,7 @@ const app = new Hono<{ Bindings: Env }>();
 
 app.route('/console', consoleApp);
 
-app.all('/', async (c) => {
+app.post('/', async (c) => {
   const client = new HotpepperClient(c.env.HOTPEPPER_API_KEY);
   const rayId = c.req.raw.headers.get('cf-ray') ?? undefined;
   const server = createServer(client, rayId);
@@ -51,5 +51,13 @@ app.all('/', async (c) => {
   await server.connect(transport);
   return transport.handleRequest(c.req.raw);
 });
+
+// ステートレスモードのためGET（サーバー→クライアントの非同期通知用SSE）とDELETE（セッション終了）は非対応。
+// GETを受け入れるとレスポンスをクローズしないSSEストリームを開いたままにしてしまい、
+// Workers runtimeに「ハングしたリクエスト」として強制キャンセルされるため、明示的に拒否する。
+const methodNotAllowed = (c: Context<{ Bindings: Env }>) =>
+  c.json({ jsonrpc: '2.0', error: { code: -32000, message: 'Method not allowed.' }, id: null }, 405);
+app.get('/', methodNotAllowed);
+app.delete('/', methodNotAllowed);
 
 export default app;
