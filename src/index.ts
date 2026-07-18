@@ -1,26 +1,29 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import { Hono } from 'hono';
-import { z } from 'zod';
 import { consoleApp } from './console/router';
+import { HotpepperClient } from './hotpepper/HotpepperClient';
+import { buildGourmetSearchParams, searchRestaurantsInputSchema } from './tools/searchRestaurants';
 
-function createServer(): McpServer {
+function createServer(client: HotpepperClient): McpServer {
   const server = new McpServer({
     name: 'hpgourmet-mcp',
     version: '0.0.0',
   });
 
-  // 疎通確認用のダミーtool。search_restaurantsの実装前にMCP Inspectorからの接続・呼び出しを確認するためのもの。
   server.registerTool(
-    'ping',
+    'search_restaurants',
     {
-      title: 'Ping',
-      description: '疎通確認用。渡した文字列をそのまま返す。',
-      inputSchema: { message: z.string().describe('エコーする文字列') },
+      title: '飲食店検索',
+      description:
+        'ホットペッパーグルメで飲食店を検索する。areaは必須。genre・keywordのうち少なくとも一方の指定が必須（ジャンル不明時はkeywordを指定すること）。',
+      inputSchema: searchRestaurantsInputSchema,
     },
-    async ({ message }) => ({
-      content: [{ type: 'text', text: `pong: ${message}` }],
-    }),
+    async (input) => {
+      const params = await buildGourmetSearchParams(client, input);
+      const result = await client.searchRestaurants(params);
+      return { content: [{ type: 'text', text: JSON.stringify(result) }] };
+    },
   );
 
   return server;
@@ -31,8 +34,8 @@ const app = new Hono<{ Bindings: Env }>();
 app.route('/console', consoleApp);
 
 app.all('/', async (c) => {
-  // design.mdの方針通り、Durable Objects/McpAgentは使わずリクエストごとにserver/transportを生成するステートレス実装
-  const server = createServer();
+  const client = new HotpepperClient(c.env.HOTPEPPER_API_KEY);
+  const server = createServer(client);
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
   });

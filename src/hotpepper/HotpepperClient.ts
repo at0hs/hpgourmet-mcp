@@ -23,6 +23,33 @@ export type LargeAreaMaster = AreaRef;
 export type MiddleAreaMaster = AreaRef & { largeArea: AreaRef };
 export type SmallAreaMaster = AreaRef & { middleArea: AreaRef; largeArea: AreaRef };
 
+export type GourmetSearchParams = {
+  largeArea?: string[];
+  middleArea?: string[];
+  smallArea?: string[];
+  genre?: string[];
+  budget?: string;
+  keyword?: string;
+  count?: number;
+};
+
+export type Shop = {
+  name: string;
+  genre: string;
+  address: string;
+  budget: string;
+  catch: string;
+  photo: string;
+  url: string;
+  open: string;
+  close: string;
+};
+
+export type GourmetSearchResult = {
+  resultsAvailable: number;
+  shops: Shop[];
+};
+
 const areaRefSchema = z.object({ code: z.string(), name: z.string() });
 
 const largeAreaResponseSchema = z.object({
@@ -46,6 +73,25 @@ const smallAreaResponseSchema = z.object({
       .array(areaRefSchema.extend({ middle_area: areaRefSchema, large_area: areaRefSchema }))
       .optional()
       .default([]),
+  }),
+});
+
+const gourmetShopSchema = z.object({
+  name: z.string(),
+  genre: z.object({ name: z.string() }),
+  address: z.string(),
+  budget: z.object({ name: z.string() }),
+  catch: z.string(),
+  photo: z.object({ pc: z.object({ m: z.string() }) }),
+  urls: z.object({ pc: z.string() }),
+  open: z.string(),
+  close: z.string(),
+});
+
+const gourmetResponseSchema = z.object({
+  results: z.object({
+    results_available: z.number(),
+    shop: z.array(gourmetShopSchema).optional().default([]),
   }),
 });
 
@@ -85,6 +131,35 @@ export class HotpepperClient {
       middleArea: { code: a.middle_area.code, name: a.middle_area.name },
       largeArea: { code: a.large_area.code, name: a.large_area.name },
     }));
+  }
+
+  /** グルメサーチAPIを呼び出す。パラメータはコード変換済みのものを渡すこと（テキスト→コード変換は呼び出し元の責務）。 */
+  async searchRestaurants(params: GourmetSearchParams): Promise<GourmetSearchResult> {
+    const apiParams: Record<string, string> = {
+      large_area: params.largeArea?.join(',') ?? '',
+      middle_area: params.middleArea?.join(',') ?? '',
+      small_area: params.smallArea?.join(',') ?? '',
+      genre: params.genre?.join(',') ?? '',
+      budget: params.budget ?? '',
+      keyword: params.keyword ?? '',
+      count: params.count !== undefined ? String(params.count) : '',
+    };
+    const { body } = await this.fetchJson('gourmet', apiParams, 'hotpepper_client');
+    const parsed = parseOrThrow(gourmetResponseSchema, body, 'gourmet');
+    return {
+      resultsAvailable: parsed.results.results_available,
+      shops: parsed.results.shop.map((s) => ({
+        name: s.name,
+        genre: s.genre.name,
+        address: s.address,
+        budget: s.budget.name,
+        catch: s.catch,
+        photo: s.photo.pc.m,
+        url: s.urls.pc,
+        open: s.open,
+        close: s.close,
+      })),
+    };
   }
 
   private async fetchJson(slug: HotpepperEndpointSlug, params: Record<string, string>, logTag: string): Promise<HotpepperResponse> {
