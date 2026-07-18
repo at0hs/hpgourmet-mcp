@@ -3,45 +3,43 @@
  * https://developers.cloudflare.com/workers/wrangler/configuration/
  */
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "hpgourmet-mcp",
-	"main": "src/index.ts",
-	"compatibility_date": "2026-07-15",
-	"observability": {
-		"enabled": true
-	},
-	"upload_source_maps": true,
-	"compatibility_flags": [
-		"nodejs_compat"
-	],
-	/**
-	 * Environment Variables
-	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
-	 * ENVIRONMENT: 本番デプロイでは常に"production"（安全側デフォルト）。
-	 * ローカル開発時のみ.dev.vars（gitignore対象）で"development"に上書きする。
-	 */
-	"vars": {
-		"ENVIRONMENT": "production"
-	},
-	/**
-	 * Smart Placement
-	 * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
-	 */
-	// "placement": {  "mode": "smart" }
-	/**
-	 * Static Assets
-	 * https://developers.cloudflare.com/workers/static-assets/binding/
-	 * run_worker_first: /console配下は静的アセットより先にWorkerのコードを通し、
-	 * ENVIRONMENTガード（router.ts）を必ず経由させるため明示指定。
-	 */
-	"assets": {
-		"directory": "./public/",
-		"binding": "ASSETS",
-		"run_worker_first": ["/console", "/console/*"]
-	}
-	/**
-	 * Service Bindings (communicate between multiple Workers)
-	 * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
-	 */
-	// "services": [  {   "binding": "MY_SERVICE",   "service": "my-service"  } ]
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hpgourmet-mcp",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-15",
+  "observability": {
+    "enabled": true,
+  },
+  "upload_source_maps": true,
+  "compatibility_flags": ["nodejs_compat"],
+  /**
+   * Environment Variables
+   * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
+   * ENVIRONMENT: 本番デプロイでは常に"production"（安全側デフォルト）。
+   * ローカル開発時のみ.dev.vars（gitignore対象）で"development"に上書きする。
+   */
+  "vars": {
+    "ENVIRONMENT": "production",
+  },
+  /**
+   * Smart Placement
+   * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
+   */
+  // "placement": {  "mode": "smart" }
+  /**
+   * Static Assets
+   * https://developers.cloudflare.com/workers/static-assets/binding/
+   * run_worker_first: /console配下は静的アセットより先にWorkerのコードを通し、
+   * ENVIRONMENTガード（router.ts）を必ず経由させるため明示指定。
+   */
+  "assets": {
+    "directory": "./public/",
+    "binding": "ASSETS",
+    "run_worker_first": ["/console", "/console/*"],
+  },
+  /**
+   * Service Bindings (communicate between multiple Workers)
+   * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
+   */
+  // "services": [  {   "binding": "MY_SERVICE",   "service": "my-service"  } ]
 }

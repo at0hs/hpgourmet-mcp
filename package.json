@@ -1,19 +1,23 @@
 {
   "name": "hpgourmet-mcp",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "license": "MIT",
   "author": "atohs",
+  "repository": "git@github.com:at0hs/hpgourmet-mcp.git",
   "scripts": {
     "deploy": "wrangler deploy",
     "dev": "wrangler dev",
     "start": "wrangler dev",
     "test": "vitest",
-    "cf-typegen": "wrangler types"
+    "cf-typegen": "wrangler types",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.12.4",
     "@types/node": "^26.1.1",
+    "prettier": "^3.9.5",
     "typescript": "^5.5.2",
     "vitest": "~3.2.0",
     "wrangler": "^4.111.0"
