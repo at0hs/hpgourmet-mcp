@@ -41,8 +41,15 @@ const app = new Hono<{ Bindings: Env }>();
 
 app.route('/console', consoleApp);
 
+const HOTPEPPER_API_KEY_HEADER = 'X-Hotpepper-Api-Key';
+
 app.post('/', async (c) => {
-  const client = new HotpepperClient(c.env.HOTPEPPER_API_KEY);
+  const apiKey = c.req.raw.headers.get(HOTPEPPER_API_KEY_HEADER);
+  if (!apiKey) {
+    return c.json({ jsonrpc: '2.0', error: { code: -32001, message: `${HOTPEPPER_API_KEY_HEADER} header is required.` }, id: null }, 401);
+  }
+
+  const client = new HotpepperClient(apiKey);
   const rayId = c.req.raw.headers.get('cf-ray') ?? undefined;
   const server = createServer(client, rayId);
   const transport = new WebStandardStreamableHTTPServerTransport({
