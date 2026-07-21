@@ -6,9 +6,10 @@
   "author": "atohs",
   "repository": "git@github.com:at0hs/hpgourmet-mcp.git",
   "scripts": {
-    "deploy": "wrangler deploy",
-    "dev": "wrangler dev",
-    "start": "wrangler dev",
+    "build:shop-map": "node src/mcpApps/shopMapView/build.mjs",
+    "deploy": "npm run build:shop-map && wrangler deploy",
+    "dev": "npm run build:shop-map && wrangler dev",
+    "start": "npm run build:shop-map && wrangler dev",
     "test": "vitest",
     "cf-typegen": "wrangler types",
     "format": "prettier --write .",
@@ -19,6 +20,7 @@
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.12.4",
     "@types/node": "^26.1.1",
+    "esbuild": "^0.28.1",
     "prettier": "^3.9.5",
     "typescript": "^5.5.2",
     "vite": "^6.4.3",
