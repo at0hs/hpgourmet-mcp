@@ -21,10 +21,13 @@
     "@types/node": "^26.1.1",
     "prettier": "^3.9.5",
     "typescript": "^5.5.2",
+    "vite": "^6.4.3",
+    "vite-plugin-singlefile": "^2.3.3",
     "vitest": "~3.2.0",
     "wrangler": "^4.111.0"
   },
   "dependencies": {
+    "@modelcontextprotocol/ext-apps": "^1.7.4",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "hono": "^4.12.30"
   }

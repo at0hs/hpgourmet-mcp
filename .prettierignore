@@ -1,1 +1,7 @@
 *.md
+# 公式サンプルの移植物・その生成物（診断用、外部コードのためフォーマット対象外）
+src/mcpApps/mapDiagnosticView/
+src/mcpApps/mapDiagnosticHtml.generated.ts
+# search_restaurants地図表示用ビュー・その生成物（Viteビルド専用、フォーマット対象外）
+src/mcpApps/shopMapView/
+src/mcpApps/shopMapHtml.generated.ts

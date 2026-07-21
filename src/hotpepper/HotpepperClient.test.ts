@@ -29,6 +29,8 @@ describe('HotpepperClient#searchRestaurants', () => {
             urls: { pc: 'https://example.com/shop' },
             open: '17:00～23:00',
             close: '日曜日',
+            lat: '35.6608183454',
+            lng: '139.7754267645',
           },
         ],
       },
@@ -50,6 +52,8 @@ describe('HotpepperClient#searchRestaurants', () => {
           url: 'https://example.com/shop',
           open: '17:00～23:00',
           close: '日曜日',
+          lat: 35.6608183454,
+          lng: 139.7754267645,
         },
       ],
     });

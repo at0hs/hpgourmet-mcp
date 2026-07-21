@@ -3,6 +3,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { HotpepperClient } from './hotpepper/HotpepperClient';
 import { createServer } from './index';
+import { SHOP_MAP_RESOURCE_URI } from './mcpApps/shopMap';
 
 function mockFetchOnce(body: unknown, status = 200) {
   vi.stubGlobal(
@@ -34,7 +35,32 @@ describe('search_restaurants tool', () => {
     expect(tools.map((t) => t.name)).toEqual(['search_restaurants']);
   });
 
-  it('正常系: 検索結果をJSON文字列として返す', async () => {
+  it('search_restaurantsツールに地図UIリソース（MCP Apps）が紐付けられている', async () => {
+    mockFetchOnce({});
+    const client = await connectedClient();
+
+    const { tools } = await client.listTools();
+
+    const tool = tools.find((t) => t.name === 'search_restaurants');
+    expect((tool?._meta as { ui?: { resourceUri?: string } } | undefined)?.ui?.resourceUri).toBe(SHOP_MAP_RESOURCE_URI);
+  });
+
+  it('地図UIリソースの内容にCesiumJS地図とCSP設定（resourceDomains/connectDomains）が含まれる', async () => {
+    mockFetchOnce({});
+    const client = await connectedClient();
+
+    const result = await client.readResource({ uri: SHOP_MAP_RESOURCE_URI });
+
+    const resourceContent = result.contents[0] as {
+      text: string;
+      _meta?: { ui?: { csp?: { resourceDomains?: string[]; connectDomains?: string[] } } };
+    };
+    expect(resourceContent.text).toContain('cesiumContainer');
+    expect(resourceContent._meta?.ui?.csp?.resourceDomains).toContain('https://cesium.com');
+    expect(resourceContent._meta?.ui?.csp?.connectDomains).toContain('https://*.openstreetmap.org');
+  });
+
+  it('正常系: 検索結果をJSON文字列として返し、structuredContentにも同じ内容（緯度経度を含む）が入る', async () => {
     mockFetchOnce({
       results: {
         results_available: 1,
@@ -49,6 +75,8 @@ describe('search_restaurants tool', () => {
             urls: { pc: 'https://example.com/shop' },
             open: '17:00～23:00',
             close: '日曜日',
+            lat: '35.6608183454',
+            lng: '139.7754267645',
           },
         ],
       },
@@ -60,7 +88,7 @@ describe('search_restaurants tool', () => {
     expect(result.isError).toBeFalsy();
     const content = result.content as { type: string; text: string }[];
     const parsed = JSON.parse(content[0].text);
-    expect(parsed).toEqual({
+    const expectedResult = {
       resultsAvailable: 1,
       shops: [
         {
@@ -73,9 +101,13 @@ describe('search_restaurants tool', () => {
           url: 'https://example.com/shop',
           open: '17:00～23:00',
           close: '日曜日',
+          lat: 35.6608183454,
+          lng: 139.7754267645,
         },
       ],
-    });
+    };
+    expect(parsed).toEqual(expectedResult);
+    expect(result.structuredContent).toEqual(expectedResult);
   });
 
   it('パラメータ不正（areaが未指定）の場合はisError: trueを返す', async () => {

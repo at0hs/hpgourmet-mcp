@@ -43,6 +43,8 @@ export type Shop = {
   url: string;
   open: string;
   close: string;
+  lat: number;
+  lng: number;
 };
 
 export type GourmetSearchResult = {
@@ -86,6 +88,9 @@ const gourmetShopSchema = z.object({
   urls: z.object({ pc: z.string() }),
   open: z.string(),
   close: z.string(),
+  // ホットペッパーAPIは数値項目を文字列で返す場合があるため、coerceで数値化する
+  lat: z.coerce.number(),
+  lng: z.coerce.number(),
 });
 
 const gourmetResponseSchema = z.object({
@@ -158,6 +163,8 @@ export class HotpepperClient {
         url: s.urls.pc,
         open: s.open,
         close: s.close,
+        lat: s.lat,
+        lng: s.lng,
       })),
     };
   }

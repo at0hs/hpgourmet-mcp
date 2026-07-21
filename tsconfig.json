@@ -38,6 +38,6 @@
     "skipLibCheck": true,
     "types": ["./worker-configuration.d.ts", "node"]
   },
-  "exclude": ["test"],
+  "exclude": ["test", "src/mcpApps/mapDiagnosticView", "src/mcpApps/shopMapView"],
   "include": ["worker-configuration.d.ts", "src/**/*.ts"]
 }
