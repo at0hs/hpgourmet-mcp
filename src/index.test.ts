@@ -57,7 +57,7 @@ describe('search_restaurants tool', () => {
     };
     expect(resourceContent.text).toContain('cesiumContainer');
     expect(resourceContent._meta?.ui?.csp?.resourceDomains).toContain('https://cesium.com');
-    expect(resourceContent._meta?.ui?.csp?.connectDomains).toContain('https://*.openstreetmap.org');
+    expect(resourceContent._meta?.ui?.csp?.connectDomains).toContain('https://cyberjapandata.gsi.go.jp');
   });
 
   it('正常系: 検索結果をJSON文字列として返し、structuredContentにも同じ内容（緯度経度を含む）が入る', async () => {

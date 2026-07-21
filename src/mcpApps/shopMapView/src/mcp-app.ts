@@ -1,9 +1,9 @@
 /**
  * Shop Map MCP App
  *
- * search_restaurantsの検索結果（shops[0]）をCesiumJSの地球儀上にピン表示する。
+ * search_restaurantsの検索結果（上位10件）をCesiumJSの地球儀上にピン表示する。
  * https://github.com/modelcontextprotocol/ext-apps/tree/main/examples/map-server の
- * 実装パターン（CDNからのCesiumJS動的ロード、Ion無効化＋OSMタイル）を踏襲している。
+ * 実装パターン（CDNからのCesiumJS動的ロード、Ion無効化＋タイルレイヤー）を踏襲している。
  */
 import { App } from "@modelcontextprotocol/ext-apps";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
@@ -14,6 +14,8 @@ declare let Cesium: any;
 
 const CESIUM_VERSION = "1.123";
 const CESIUM_BASE_URL = `https://cesium.com/downloads/cesiumjs/releases/${CESIUM_VERSION}/Build/Cesium`;
+
+const MAX_SHOPS = 10;
 
 const log = {
   info: console.log.bind(console, "[shop-map]"),
@@ -44,13 +46,14 @@ async function loadCesium(): Promise<void> {
   });
 }
 
-/** CesiumJSをOpenStreetMapタイルで初期化する（Cesium Ionは使用しない）。 */
+/** CesiumJSを国土地理院タイルで初期化する（Cesium Ionは使用しない）。 */
 async function initCesium(): Promise<any> {
   Cesium.Ion.defaultAccessToken = undefined;
   // Ion無効時はデフォルトの表示範囲設定が必須。日本全体を初期表示範囲とする。
   Cesium.Camera.DEFAULT_VIEW_RECTANGLE = Cesium.Rectangle.fromDegrees(122, 24, 146, 46);
 
   const cesiumViewer = new Cesium.Viewer("cesiumContainer", {
+    // 標準UIのinfoBox（ピンクリック時の詳細ポップアップ）は有効のままにする。
     baseLayer: false,
     geocoder: false,
     baseLayerPicker: false,
@@ -81,14 +84,15 @@ async function initCesium(): Promise<any> {
     cesiumViewer.canvas.addEventListener(eventName, (e: TouchEvent) => e.preventDefault(), { passive: false });
   }
 
-  const osmProvider = new Cesium.UrlTemplateImageryProvider({
-    url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+  // 国土地理院（GSI）淡色地図タイル。標準地図より配色・建物ハッチングが控えめで見やすく、日本語ラベルも維持できる。
+  const gsiProvider = new Cesium.UrlTemplateImageryProvider({
+    url: "https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png",
     minimumLevel: 0,
-    maximumLevel: 19,
-    credit: new Cesium.Credit('© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', true),
+    maximumLevel: 18,
+    credit: new Cesium.Credit('地理院タイル（<a href="https://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>）', true),
   });
-  osmProvider.errorEvent.addEventListener((error: unknown) => log.error("OSM imagery provider error:", error));
-  cesiumViewer.imageryLayers.addImageryProvider(osmProvider);
+  gsiProvider.errorEvent.addEventListener((error: unknown) => log.error("GSI imagery provider error:", error));
+  cesiumViewer.imageryLayers.addImageryProvider(gsiProvider);
 
   cesiumViewer.camera.flyTo({
     destination: Cesium.Camera.DEFAULT_VIEW_RECTANGLE,
@@ -127,48 +131,88 @@ function hideLoading(): void {
 
 interface Shop {
   name: string;
+  genre?: string;
+  address?: string;
+  budget?: string;
   lat: number;
   lng: number;
 }
 
-/** 店舗の位置にピンとラベルを追加し、カメラをその位置へ移動する。 */
-async function showShop(cesiumViewer: any, shop: Shop): Promise<void> {
-  cesiumViewer.entities.add({
-    position: Cesium.Cartesian3.fromDegrees(shop.lng, shop.lat),
-    point: {
-      pixelSize: 12,
-      color: Cesium.Color.CRIMSON,
-      outlineColor: Cesium.Color.WHITE,
-      outlineWidth: 2,
-    },
-    label: {
-      text: shop.name,
-      font: "14px sans-serif",
-      fillColor: Cesium.Color.WHITE,
-      style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-      outlineWidth: 3,
-      outlineColor: Cesium.Color.BLACK,
-      pixelOffset: new Cesium.Cartesian2(0, -20),
-      verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-    },
-  });
+function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c);
+}
+
+/** infoBoxに表示する店舗詳細のHTMLを組み立てる。 */
+function buildShopDescription(shop: Shop): string {
+  const rows = [
+    shop.genre && `<div>ジャンル: ${escapeHtml(shop.genre)}</div>`,
+    shop.address && `<div>住所: ${escapeHtml(shop.address)}</div>`,
+    shop.budget && `<div>予算: ${escapeHtml(shop.budget)}</div>`,
+  ].filter(Boolean);
+  return `<div>${rows.join("")}</div>`;
+}
+
+/** 店舗すべてにピンとラベルを追加し、全ピンが収まるようカメラを移動する。 */
+async function showShops(cesiumViewer: any, shops: Shop[]): Promise<void> {
+  for (const shop of shops) {
+    cesiumViewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(shop.lng, shop.lat),
+      point: {
+        pixelSize: 12,
+        color: Cesium.Color.CRIMSON,
+        outlineColor: Cesium.Color.WHITE,
+        outlineWidth: 2,
+      },
+      label: {
+        text: shop.name,
+        font: "14px sans-serif",
+        fillColor: Cesium.Color.WHITE,
+        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+        outlineWidth: 3,
+        outlineColor: Cesium.Color.BLACK,
+        pixelOffset: new Cesium.Cartesian2(0, -20),
+        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+      },
+      name: shop.name,
+      description: buildShopDescription(shop),
+    });
+  }
 
   await new Promise<void>((resolve) => {
-    cesiumViewer.camera.flyTo({
-      destination: Cesium.Cartesian3.fromDegrees(shop.lng, shop.lat, 1000),
-      orientation: {
-        heading: 0,
-        pitch: Cesium.Math.toRadians(-90),
-        roll: 0,
-      },
-      duration: 1.5,
-      complete: () => resolve(),
-      cancel: () => resolve(),
-    });
+    if (shops.length === 1) {
+      const shop = shops[0];
+      cesiumViewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(shop.lng, shop.lat, 1000),
+        orientation: {
+          heading: 0,
+          pitch: Cesium.Math.toRadians(-90),
+          roll: 0,
+        },
+        duration: 1.5,
+        complete: () => resolve(),
+        cancel: () => resolve(),
+      });
+    } else {
+      cesiumViewer.camera.flyTo({
+        destination: computeBoundingDestination(shops),
+        duration: 1.5,
+        complete: () => resolve(),
+        cancel: () => resolve(),
+      });
+    }
   });
 
   await waitForTilesLoaded(cesiumViewer);
   hideLoading();
+}
+
+/** 複数店舗の緯度経度から、全ピンが収まるRectangleを計算する。 */
+function computeBoundingDestination(shops: Shop[]): any {
+  const west = Math.min(...shops.map((s) => s.lng));
+  const east = Math.max(...shops.map((s) => s.lng));
+  const south = Math.min(...shops.map((s) => s.lat));
+  const north = Math.max(...shops.map((s) => s.lat));
+  return Cesium.Rectangle.fromDegrees(west, south, east, north);
 }
 
 /** ホストが`structuredContent`を転送しない場合があるため、`content`内のテキストからのJSON復元をフォールバックとして用意する。 */
@@ -189,14 +233,16 @@ function findShopsFromContent(result: CallToolResult): { shops?: unknown[] } | u
   return undefined;
 }
 
-function extractFirstShop(result: CallToolResult): Shop | undefined {
+function isValidShop(shop: unknown): shop is Shop {
+  const s = shop as { name?: unknown; lat?: unknown; lng?: unknown } | undefined;
+  return !!s && typeof s.name === "string" && typeof s.lat === "number" && typeof s.lng === "number";
+}
+
+function extractShops(result: CallToolResult): Shop[] {
   const structured = result.structuredContent as { shops?: unknown[] } | undefined;
   const data = Array.isArray(structured?.shops) ? structured : findShopsFromContent(result);
-  const shop = data?.shops?.[0] as { name?: unknown; lat?: unknown; lng?: unknown } | undefined;
-  if (shop && typeof shop.name === "string" && typeof shop.lat === "number" && typeof shop.lng === "number") {
-    return { name: shop.name, lat: shop.lat, lng: shop.lng };
-  }
-  return undefined;
+  const rawShops = data?.shops ?? [];
+  return rawShops.filter(isValidShop).slice(0, MAX_SHOPS) as Shop[];
 }
 
 const PREFERRED_HEIGHT = 400;
@@ -221,14 +267,14 @@ app.ontoolresult = async (result) => {
     log.warn("ontoolresult received but viewer is not ready yet");
     return;
   }
-  const shop = extractFirstShop(result);
-  log.info("extractFirstShop ->", JSON.stringify(shop));
-  if (shop) {
-    log.info("showShop start:", shop.name, shop.lat, shop.lng);
-    await showShop(viewer, shop);
-    log.info("showShop done");
+  const shops = extractShops(result);
+  log.info("extractShops ->", shops.length, "shops");
+  if (shops.length > 0) {
+    log.info("showShops start");
+    await showShops(viewer, shops);
+    log.info("showShops done");
   } else {
-    log.warn("no shop found in toolresult, skip showShop");
+    log.warn("no shops found in toolresult, skip showShops");
   }
 };
 

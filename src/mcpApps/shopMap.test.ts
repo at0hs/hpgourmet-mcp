@@ -33,9 +33,29 @@ describe('registerShopMapResource', () => {
     const content = result.contents[0] as { text: string };
     expect(content.text).toContain('cesiumContainer');
     expect(content.text).toContain('cesium.com/downloads/cesiumjs');
-    expect(content.text).toContain('tile.openstreetmap.org');
+    expect(content.text).toContain('cyberjapandata.gsi.go.jp');
     expect(content.text).toContain('ontoolresult');
     expect(content.text).toContain('structuredContent');
+  });
+
+  it('リソース本文は上位10件に絞って複数ピンを表示する処理を含む', async () => {
+    const client = await connectedClient();
+
+    const result = await client.readResource({ uri: SHOP_MAP_RESOURCE_URI });
+
+    const content = result.contents[0] as { text: string };
+    expect(content.text).toContain(',10)');
+  });
+
+  it('リソース本文はピンのinfoBox用に店舗のジャンル・住所・予算を表示する処理を含む', async () => {
+    const client = await connectedClient();
+
+    const result = await client.readResource({ uri: SHOP_MAP_RESOURCE_URI });
+
+    const content = result.contents[0] as { text: string };
+    expect(content.text).toContain('ジャンル');
+    expect(content.text).toContain('住所');
+    expect(content.text).toContain('予算');
   });
 
   it('リソース本文はautoResizeを無効化し、固定高さをホストへ能動通知する', async () => {
@@ -48,7 +68,7 @@ describe('registerShopMapResource', () => {
     expect(content.text).toContain('sendSizeChanged');
   });
 
-  it('リソース本文のCSP設定でCesiumJS CDNとOpenStreetMapタイルの読み込みのみを許可している', async () => {
+  it('リソース本文のCSP設定でCesiumJS CDNと国土地理院タイルの読み込みのみを許可している', async () => {
     const client = await connectedClient();
 
     const result = await client.readResource({ uri: SHOP_MAP_RESOURCE_URI });
@@ -57,8 +77,16 @@ describe('registerShopMapResource', () => {
       _meta?: { ui?: { csp?: { frameDomains?: string[]; resourceDomains?: string[]; connectDomains?: string[] } } };
     };
     expect(content._meta?.ui?.csp?.frameDomains).toBeUndefined();
-    expect(content._meta?.ui?.csp?.resourceDomains).toEqual(['https://*.openstreetmap.org', 'https://cesium.com', 'https://*.cesium.com']);
-    expect(content._meta?.ui?.csp?.connectDomains).toEqual(['https://*.openstreetmap.org', 'https://cesium.com', 'https://*.cesium.com']);
+    expect(content._meta?.ui?.csp?.resourceDomains).toEqual([
+      'https://cyberjapandata.gsi.go.jp',
+      'https://cesium.com',
+      'https://*.cesium.com',
+    ]);
+    expect(content._meta?.ui?.csp?.connectDomains).toEqual([
+      'https://cyberjapandata.gsi.go.jp',
+      'https://cesium.com',
+      'https://*.cesium.com',
+    ]);
   });
 });
 
