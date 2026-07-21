@@ -33,7 +33,7 @@ describe('registerShopMapResource', () => {
     const content = result.contents[0] as { text: string };
     expect(content.text).toContain('cesiumContainer');
     expect(content.text).toContain('cesium.com/downloads/cesiumjs');
-    expect(content.text).toContain('cyberjapandata.gsi.go.jp');
+    expect(content.text).toContain('tile.openstreetmap.org');
     expect(content.text).toContain('ontoolresult');
     expect(content.text).toContain('structuredContent');
   });
@@ -68,7 +68,7 @@ describe('registerShopMapResource', () => {
     expect(content.text).toContain('sendSizeChanged');
   });
 
-  it('リソース本文のCSP設定でCesiumJS CDNと国土地理院タイルの読み込みのみを許可している', async () => {
+  it('リソース本文のCSP設定でCesiumJS CDNとOpenStreetMapタイルの読み込みのみを許可している', async () => {
     const client = await connectedClient();
 
     const result = await client.readResource({ uri: SHOP_MAP_RESOURCE_URI });
@@ -78,12 +78,12 @@ describe('registerShopMapResource', () => {
     };
     expect(content._meta?.ui?.csp?.frameDomains).toBeUndefined();
     expect(content._meta?.ui?.csp?.resourceDomains).toEqual([
-      'https://cyberjapandata.gsi.go.jp',
+      'https://tile.openstreetmap.org',
       'https://cesium.com',
       'https://*.cesium.com',
     ]);
     expect(content._meta?.ui?.csp?.connectDomains).toEqual([
-      'https://cyberjapandata.gsi.go.jp',
+      'https://tile.openstreetmap.org',
       'https://cesium.com',
       'https://*.cesium.com',
     ]);

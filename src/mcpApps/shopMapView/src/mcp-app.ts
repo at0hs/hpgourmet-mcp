@@ -46,7 +46,7 @@ async function loadCesium(): Promise<void> {
   });
 }
 
-/** CesiumJSを国土地理院タイルで初期化する（Cesium Ionは使用しない）。 */
+/** CesiumJSをOpenStreetMapタイルで初期化する（Cesium Ionは使用しない）。 */
 async function initCesium(): Promise<any> {
   Cesium.Ion.defaultAccessToken = undefined;
   // Ion無効時はデフォルトの表示範囲設定が必須。日本全体を初期表示範囲とする。
@@ -84,15 +84,16 @@ async function initCesium(): Promise<any> {
     cesiumViewer.canvas.addEventListener(eventName, (e: TouchEvent) => e.preventDefault(), { passive: false });
   }
 
-  // 国土地理院（GSI）淡色地図タイル。標準地図より配色・建物ハッチングが控えめで見やすく、日本語ラベルも維持できる。
-  const gsiProvider = new Cesium.UrlTemplateImageryProvider({
-    url: "https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png",
+  // OpenStreetMap標準タイル。非商用・小規模利用の範囲でTile Usage Policy
+  // （https://operations.osmfoundation.org/policies/tiles/）に沿って利用する。
+  const osmProvider = new Cesium.UrlTemplateImageryProvider({
+    url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
     minimumLevel: 0,
-    maximumLevel: 18,
-    credit: new Cesium.Credit('地理院タイル（<a href="https://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>）', true),
+    maximumLevel: 19,
+    credit: new Cesium.Credit('© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', true),
   });
-  gsiProvider.errorEvent.addEventListener((error: unknown) => log.error("GSI imagery provider error:", error));
-  cesiumViewer.imageryLayers.addImageryProvider(gsiProvider);
+  osmProvider.errorEvent.addEventListener((error: unknown) => log.error("OSM imagery provider error:", error));
+  cesiumViewer.imageryLayers.addImageryProvider(osmProvider);
 
   cesiumViewer.camera.flyTo({
     destination: Cesium.Camera.DEFAULT_VIEW_RECTANGLE,

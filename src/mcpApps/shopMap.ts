@@ -1,6 +1,6 @@
 // search_restaurantsの結果をMCP Apps（https://modelcontextprotocol.io/docs/extensions/apps）で地図表示するためのUIリソース。
 // 検索結果の上位10件（shops.slice(0, 10)）の緯度経度をもとに、
-// CesiumJS（国土地理院タイル、Cesium Ion不使用）の地球儀上にピン＋ラベル＋infoBoxで表示する。
+// CesiumJS（OpenStreetMapタイル、Cesium Ion不使用）の地球儀上にピン＋ラベル＋infoBoxで表示する。
 // UI本体はshopMapView/でVite（vite-plugin-singlefile）ビルドし、shopMapHtml.generated.tsに埋め込んでいる。
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -11,7 +11,7 @@ export const SHOP_MAP_RESOURCE_URI = 'ui://hpgourmet-mcp/shop-map.html';
 
 const CESIUM_ORIGIN = 'https://cesium.com';
 const CESIUM_WILDCARD_ORIGIN = 'https://*.cesium.com';
-const GSI_TILE_ORIGIN = 'https://cyberjapandata.gsi.go.jp';
+const OSM_TILE_ORIGIN = 'https://tile.openstreetmap.org';
 
 export const shopSchema = z.object({
   name: z.string(),
@@ -49,8 +49,8 @@ export function registerShopMapResource(server: McpServer): void {
           _meta: {
             ui: {
               csp: {
-                resourceDomains: [GSI_TILE_ORIGIN, CESIUM_ORIGIN, CESIUM_WILDCARD_ORIGIN],
-                connectDomains: [GSI_TILE_ORIGIN, CESIUM_ORIGIN, CESIUM_WILDCARD_ORIGIN],
+                resourceDomains: [OSM_TILE_ORIGIN, CESIUM_ORIGIN, CESIUM_WILDCARD_ORIGIN],
+                connectDomains: [OSM_TILE_ORIGIN, CESIUM_ORIGIN, CESIUM_WILDCARD_ORIGIN],
               },
             },
           },
