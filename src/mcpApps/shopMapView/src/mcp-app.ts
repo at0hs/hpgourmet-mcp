@@ -132,9 +132,9 @@ function hideLoading(): void {
 
 interface Shop {
   name: string;
-  genre?: string;
   address?: string;
-  budget?: string;
+  photo?: string;
+  url?: string;
   lat: number;
   lng: number;
 }
@@ -143,17 +143,26 @@ function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c);
 }
 
-/** infoBoxに表示する店舗詳細のHTMLを組み立てる。 */
-function buildShopDescription(shop: Shop): string {
-  const rows = [
-    shop.genre && `<div>ジャンル: ${escapeHtml(shop.genre)}</div>`,
-    shop.address && `<div>住所: ${escapeHtml(shop.address)}</div>`,
-    shop.budget && `<div>予算: ${escapeHtml(shop.budget)}</div>`,
-  ].filter(Boolean);
-  return `<div>${rows.join("")}</div>`;
+/** 緯度経度からGoogleマップの検索結果ページを開くURLを組み立てる。 */
+function buildGoogleMapsUrl(shop: Shop): string {
+  return `https://www.google.com/maps/search/?api=1&query=${shop.lat},${shop.lng}`;
 }
 
-/** 店舗すべてにピンとラベルを追加し、全ピンが収まるようカメラを移動する。 */
+/** infoBoxに表示する店舗詳細のHTMLを組み立てる。CesiumのInfoBoxはダークテーマのため、それに馴染むダークカードにしている。 */
+function buildShopDescription(shop: Shop): string {
+  const photo = shop.photo
+    ? `<img src="${escapeHtml(shop.photo)}" alt="${escapeHtml(shop.name)}" style="width:200px;height:150px;max-width:100%;object-fit:cover;display:block;margin:0 auto 12px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.4);" onerror="this.style.display='none'" />`
+    : "";
+  const addressRow = shop.address
+    ? `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #383e4a;"><span style="font-size:15px;">📍</span><a href="${escapeHtml(buildGoogleMapsUrl(shop))}" target="_blank" rel="noopener noreferrer" style="color:#7dd3fc;text-decoration:none;font-size:13px;">${escapeHtml(shop.address)}</a></div>`
+    : "";
+  const urlRow = shop.url
+    ? `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;"><span style="font-size:15px;">🔗</span><a href="${escapeHtml(shop.url)}" target="_blank" rel="noopener noreferrer" style="color:#facc15;text-decoration:none;font-size:13px;font-weight:600;">ホットペッパーで見る ›</a></div>`
+    : "";
+  return `<div style="background:#20242c;padding:14px;border-radius:10px;font-family:-apple-system,'Segoe UI',sans-serif;color:#e5e7eb;">${photo}${addressRow}${urlRow}</div>`;
+}
+
+/** 店舗すべてにピンを追加し、全ピンが収まるようカメラを移動する。店名はクリック時のinfoBoxで確認できるため、常時表示のラベルは付けない（密集時の重なり防止）。 */
 async function showShops(cesiumViewer: any, shops: Shop[]): Promise<void> {
   for (const shop of shops) {
     cesiumViewer.entities.add({
@@ -163,16 +172,6 @@ async function showShops(cesiumViewer: any, shops: Shop[]): Promise<void> {
         color: Cesium.Color.CRIMSON,
         outlineColor: Cesium.Color.WHITE,
         outlineWidth: 2,
-      },
-      label: {
-        text: shop.name,
-        font: "14px sans-serif",
-        fillColor: Cesium.Color.WHITE,
-        style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-        outlineWidth: 3,
-        outlineColor: Cesium.Color.BLACK,
-        pixelOffset: new Cesium.Cartesian2(0, -20),
-        verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
       },
       name: shop.name,
       description: buildShopDescription(shop),
@@ -246,7 +245,9 @@ function extractShops(result: CallToolResult): Shop[] {
   return rawShops.filter(isValidShop).slice(0, MAX_SHOPS) as Shop[];
 }
 
-const PREFERRED_HEIGHT = 400;
+// Cesium ViewerはリサイズのたびにinfoBox.viewModel.maxHeightを「コンテナ高さ - 125px」で自動調整するため、
+// ウィジェット全体の高さを広げるだけでinfoBoxの表示可能領域も連動して広がる。
+const PREFERRED_HEIGHT = 550;
 
 let viewer: any = null;
 

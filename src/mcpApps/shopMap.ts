@@ -12,6 +12,7 @@ export const SHOP_MAP_RESOURCE_URI = 'ui://hpgourmet-mcp/shop-map.html';
 const CESIUM_ORIGIN = 'https://cesium.com';
 const CESIUM_WILDCARD_ORIGIN = 'https://*.cesium.com';
 const OSM_TILE_ORIGIN = 'https://tile.openstreetmap.org';
+const HOTPEPPER_PHOTO_ORIGIN = 'https://imgfp.hotp.jp';
 
 export const shopSchema = z.object({
   name: z.string(),
@@ -49,7 +50,7 @@ export function registerShopMapResource(server: McpServer): void {
           _meta: {
             ui: {
               csp: {
-                resourceDomains: [OSM_TILE_ORIGIN, CESIUM_ORIGIN, CESIUM_WILDCARD_ORIGIN],
+                resourceDomains: [OSM_TILE_ORIGIN, CESIUM_ORIGIN, CESIUM_WILDCARD_ORIGIN, HOTPEPPER_PHOTO_ORIGIN],
                 connectDomains: [OSM_TILE_ORIGIN, CESIUM_ORIGIN, CESIUM_WILDCARD_ORIGIN],
               },
             },

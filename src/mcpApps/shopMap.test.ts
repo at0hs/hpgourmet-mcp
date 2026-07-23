@@ -47,15 +47,24 @@ describe('registerShopMapResource', () => {
     expect(content.text).toContain(',10)');
   });
 
-  it('リソース本文はピンのinfoBox用に店舗のジャンル・住所・予算を表示する処理を含む', async () => {
+  it('リソース本文はピンのinfoBoxに住所（Googleマップへのリンク）とホットペッパーへのリンクを表示する処理を含む', async () => {
     const client = await connectedClient();
 
     const result = await client.readResource({ uri: SHOP_MAP_RESOURCE_URI });
 
     const content = result.contents[0] as { text: string };
-    expect(content.text).toContain('ジャンル');
-    expect(content.text).toContain('住所');
-    expect(content.text).toContain('予算');
+    expect(content.text).toContain('google.com/maps/search');
+    expect(content.text).toContain('ホットペッパーで見る');
+  });
+
+  it('リソース本文はピンのinfoBoxに店舗写真のサムネイルを表示する処理を含む', async () => {
+    const client = await connectedClient();
+
+    const result = await client.readResource({ uri: SHOP_MAP_RESOURCE_URI });
+
+    const content = result.contents[0] as { text: string };
+    expect(content.text).toContain('<img');
+    expect(content.text).toContain('onerror');
   });
 
   it('リソース本文はautoResizeを無効化し、固定高さをホストへ能動通知する', async () => {
@@ -68,7 +77,7 @@ describe('registerShopMapResource', () => {
     expect(content.text).toContain('sendSizeChanged');
   });
 
-  it('リソース本文のCSP設定でCesiumJS CDNとOpenStreetMapタイルの読み込みのみを許可している', async () => {
+  it('リソース本文のCSP設定でCesiumJS CDN・OpenStreetMapタイル・ホットペッパー写真の読み込みのみを許可している', async () => {
     const client = await connectedClient();
 
     const result = await client.readResource({ uri: SHOP_MAP_RESOURCE_URI });
@@ -81,6 +90,7 @@ describe('registerShopMapResource', () => {
       'https://tile.openstreetmap.org',
       'https://cesium.com',
       'https://*.cesium.com',
+      'https://imgfp.hotp.jp',
     ]);
     expect(content._meta?.ui?.csp?.connectDomains).toEqual([
       'https://tile.openstreetmap.org',
